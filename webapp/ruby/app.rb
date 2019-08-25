@@ -2,6 +2,8 @@ require 'digest/sha1'
 require 'mysql2'
 require 'sinatra/base'
 
+require 'pry'
+
 class App < Sinatra::Base
   configure do
     set :session_secret, 'tonymoris'
@@ -148,19 +150,18 @@ class App < Sinatra::Base
 
     rows = db.query('SELECT id FROM channel').to_a
     channel_ids = rows.map { |row| row['id'] }
-
     res = []
     channel_ids.each do |channel_id|
-      statement = db.prepare('SELECT * FROM haveread WHERE user_id = ? AND channel_id = ?')
+      statement = db.prepare('SELECT message_id FROM haveread WHERE user_id = ? AND channel_id = ? limit 1')
       row = statement.execute(user_id, channel_id).first
       statement.close
       r = {}
       r['channel_id'] = channel_id
       r['unread'] = if row.nil?
-                      statement = db.prepare('SELECT COUNT(*) as cnt FROM message WHERE channel_id = ?')
+                      statement = db.prepare('SELECT COUNT(*) as cnt FROM message WHERE channel_id = ? limit 1')
                       statement.execute(channel_id).first['cnt']
                     else
-                      statement = db.prepare('SELECT COUNT(*) as cnt FROM message WHERE channel_id = ? AND ? < id')
+                      statement = db.prepare('SELECT COUNT(*) as cnt FROM message WHERE channel_id = ? AND ? < id limit 1')
                       statement.execute(channel_id, row['message_id']).first['cnt']
       end
       statement.close
@@ -291,19 +292,19 @@ class App < Sinatra::Base
     redirect '/', 303
   end
 
-  get '/icons/:file_name' do
-    file_name = params[:file_name]
-    statement = db.prepare('SELECT * FROM image WHERE name = ?')
-    row = statement.execute(file_name).first
-    statement.close
-    ext = file_name.include?('.') ? File.extname(file_name) : ''
-    mime = ext2mime(ext)
-    if !row.nil? && !mime.empty?
-      content_type mime
-      return row['data']
-    end
-    404
-  end
+  # get '/icons/:file_name' do
+  #   file_name = params[:file_name]
+  #   statement = db.prepare('SELECT * FROM image WHERE name = ?')
+  #   row = statement.execute(file_name).first
+  #   statement.close
+  #   ext = file_name.include?('.') ? File.extname(file_name) : ''
+  #   mime = ext2mime(ext)
+  #   if !row.nil? && !mime.empty?
+  #     content_type mime
+  #     return row['data']
+  #   end
+  #   404
+  # end
 
   private
 

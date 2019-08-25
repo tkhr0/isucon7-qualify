@@ -23,9 +23,10 @@ services:
       - app
     ports:
       - "80:80"
-    # volumes:
-    #   - ./:/home/isucon/isubata:cached
-    #   - ./files/app/nginx.conf:/etc/nginx/conf.d/nginx.confg:cached
+    volumes:
+      # - ./:/home/isucon/isubata:cached
+      # - ./files/app/nginx.conf:/etc/nginx/conf.d/nginx.confg:cached
+      - statics:/home/isucon/isubata/webapp/public
   app:
     build:
       context: ./docker/app/ruby
@@ -42,10 +43,13 @@ services:
       ISUBATA_DB_USER: isucon
       ISUBATA_DB_PASSWORD: isucon
       ISUBATA_DB_HOST: db
-    command: sh -c "bundle install && bundle exec puma -p 5000 -t 10"
+    # command: sh -c "bundle install && bundle exec puma -p 5000 -t 10"
+      command: sh -c "irb"
+    tty: true
     volumes:
       - ./webapp/ruby/:/home/isucon/isubata/webapp/ruby:cached
       - bundle:/usr/local/bundle
+      - statics:/home/isucon/isubata/webapp/statics
   db:
     build:
       context: ./docker/db
@@ -53,7 +57,7 @@ services:
         GIT_URL: https://github.com/tkhr0/isucon7-qualify.git
     image: isucon7-qualifier-db
     ports:
-      - "3306"
+      - "4000:3306"
     networks:
       - backend
     command: ["--character-set-server=utf8mb4"]
@@ -67,3 +71,4 @@ networks:
   backend:
 volumes:
   bundle:
+  statics:
